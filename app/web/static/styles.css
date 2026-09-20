@@ -1,0 +1,84 @@
+:root {
+  --bg: #f4f1ea;
+  --ink: #1c1917;
+  --muted: #57534e;
+  --panel: #fffcf7;
+  --line: #d6d3d1;
+  --accent: #1a365d;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font: 15px/1.45 system-ui, sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+}
+header, main { max-width: 960px; margin: 0 auto; padding: 1rem 1.25rem; }
+header h1 { margin: 0 0 0.25rem; }
+header p { margin: 0; color: var(--muted); }
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 1rem 1.1rem 1.2rem;
+  margin-bottom: 1rem;
+}
+.panel h2 { margin: 0 0 0.75rem; font-size: 1.05rem; }
+label { display: block; margin: 0.4rem 0; }
+input[type="text"], input[type="number"], input[type="file"], select {
+  width: 100%;
+  max-width: 28rem;
+  padding: 0.35rem 0.45rem;
+}
+button {
+  background: var(--accent);
+  color: white;
+  border: 0;
+  padding: 0.45rem 0.85rem;
+  border-radius: 4px;
+  cursor: pointer;
+  margin: 0.25rem 0.35rem 0.25rem 0;
+}
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+.status { color: var(--muted); min-height: 1.2em; }
+.error { color: #9f1239; }
+.hidden { display: none; }
+.templates { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem; }
+.tpl {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 0.55rem 0.7rem;
+  width: 15rem;
+  cursor: pointer;
+  background: white;
+}
+.tpl.selected { border-color: var(--accent); outline: 2px solid var(--accent); }
+.tpl .rec { font-size: 0.75rem; color: #0f766e; font-weight: 600; }
+#column-picks { list-style: none; padding: 0; margin: 0.25rem 0 0.75rem; }
+#column-picks li { margin: 0.2rem 0; }
+.check { display: flex; align-items: center; gap: 0.4rem; }
+table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+th, td { border: 1px solid var(--line); padding: 0.3rem 0.45rem; text-align: left; }
+th { background: #e7e5e4; }
+.preview {
+  background: white;
+  border: 1px solid var(--line);
+  min-height: 8rem;
+  padding: 1rem;
+  overflow: auto;
+}
+.doc h1 { margin-top: 0; color: var(--accent); }
+.summary { display: flex; flex-wrap: wrap; gap: 0.75rem; margin: 0.75rem 0 1rem; }
+.stat {
+  border: 1px solid var(--line);
+  padding: 0.45rem 0.7rem;
+  min-width: 8rem;
+}
+.stat span { display: block; font-size: 0.75rem; color: var(--muted); }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); gap: 0.75rem; }
+.card { border: 1px solid var(--line); padding: 0.7rem; }
+.card h3 { margin: 0 0 0.4rem; }
+.card dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 0.2rem 0.7rem; }
+.card dt { color: var(--muted); }
+.card dd { margin: 0; }

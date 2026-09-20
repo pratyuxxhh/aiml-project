@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Excel → Word</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <header>
+    <h1>Excel/CSV → Word</h1>
+    <p>Upload a table, pick a template, preview, export a .docx.</p>
+  </header>
+
+  <main>
+    <section class="panel">
+      <h2>1. Upload</h2>
+      <form id="upload-form">
+        <input type="file" id="file" name="file" accept=".xlsx,.xls,.csv" required />
+        <button type="submit">Parse file</button>
+      </form>
+      <p id="upload-status" class="status"></p>
+      <div id="sheet-row" class="hidden">
+        <label>Sheet
+          <select id="sheet"></select>
+        </label>
+        <label>Header row (0-based)
+          <input type="number" id="header-row" min="0" />
+        </label>
+        <button type="button" id="reprocess">Reload sheet</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>2. Parsed data</h2>
+      <div id="columns"></div>
+      <div id="sample"></div>
+    </section>
+
+    <section class="panel">
+      <h2>3. Template &amp; edits</h2>
+      <div id="templates" class="templates"></div>
+      <label>Title <input type="text" id="title" /></label>
+      <label>Subtitle <input type="text" id="subtitle" /></label>
+      <label>Font size
+        <select id="font-size">
+          <option value="10">10</option>
+          <option value="11" selected>11</option>
+          <option value="12">12</option>
+          <option value="14">14</option>
+        </select>
+      </label>
+      <label class="check"><input type="checkbox" id="show-summary" checked /> Show summary</label>
+      <p>Columns (drag order via the list, uncheck to hide)</p>
+      <ul id="column-picks"></ul>
+      <button type="button" id="preview-btn">Update preview</button>
+      <button type="button" id="export-btn">Export .docx</button>
+    </section>
+
+    <section class="panel">
+      <h2>4. Preview</h2>
+      <div id="preview" class="preview"></div>
+    </section>
+  </main>
+  <script src="/static/app.js"></script>
+</body>
+</html>

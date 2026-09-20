@@ -1,0 +1,54 @@
+<article class="doc" style="font-size: {{ spec.font_size }}pt;">
+  {% for section in spec.sections %}
+    {% if section.type == "heading" %}
+      {% if section.level == 1 %}
+        <h1>{{ section.text }}</h1>
+      {% elif section.level == 2 %}
+        <h2>{{ section.text }}</h2>
+      {% else %}
+        <h3>{{ section.text }}</h3>
+      {% endif %}
+    {% elif section.type == "paragraph" %}
+      <p>{{ section.text }}</p>
+    {% elif section.type == "summary" %}
+      <div class="summary">
+        {% for item in section.items %}
+          <div class="stat"><span>{{ item.label }}</span><strong>{{ item.value }}</strong></div>
+        {% endfor %}
+      </div>
+    {% elif section.type == "table" %}
+      <table>
+        <thead>
+          <tr>
+            {% for header in section.headers %}
+              <th>{{ header }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in section.rows %}
+            <tr>
+              {% for cell in row %}
+                <td>{{ cell }}</td>
+              {% endfor %}
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% elif section.type == "cards" %}
+      <div class="cards">
+        {% for card in section.cards %}
+          <section class="card">
+            <h3>{{ card.title }}</h3>
+            <dl>
+              {% for field in card.fields %}
+                <dt>{{ field.label }}</dt>
+                <dd>{{ field.value }}</dd>
+              {% endfor %}
+            </dl>
+          </section>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endfor %}
+</article>
