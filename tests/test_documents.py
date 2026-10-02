@@ -71,3 +71,41 @@ def test_preview_and_docx_use_same_spec(tmp_path: Path):
             table_texts.extend(cell.text for cell in row.cells)
     assert "Pratyush" in table_texts
 
+
+def test_column_widths_are_rendered_in_preview_and_docx(tmp_path: Path):
+    dataset = _dataset()
+    widths = [10, 15, 20, 25, 30]
+    spec = build_specification(
+        dataset,
+        "generic_table",
+        DocumentEdits(column_widths=widths, selected_columns=["name", "usn", "cgpa", "package", "company"]),
+    )
+    table = next(section for section in spec.sections if section.type == "table")
+    assert table.column_widths == widths
+    html = render_preview_html(spec)
+    assert 'style="width: 10.0%;"' in html
+    assert 'data-col-width="10.0"' in html
+
+    out = tmp_path / "widths.docx"
+    write_docx(spec, out)
+    doc = Document(str(out))
+    exported_table = next(
+        table for table in doc.tables
+        if any(cell.text == "Pratyush" for row in table.rows for cell in row.cells)
+    )
+    exported_widths = [column.width for column in exported_table.columns]
+    assert exported_widths[0] < exported_widths[1] < exported_widths[2]
+    assert exported_widths[2] < exported_widths[3] < exported_widths[4]
+
+
+def test_mismatched_column_widths_are_ignored():
+    dataset = _dataset()
+    spec = build_specification(
+        dataset,
+        "generic_table",
+        DocumentEdits(column_widths=[20, 30, 50], selected_columns=["name", "usn"]),
+    )
+    table = next(section for section in spec.sections if section.type == "table")
+    assert table.headers == ["Name", "USN"]
+    assert table.column_widths == []
+

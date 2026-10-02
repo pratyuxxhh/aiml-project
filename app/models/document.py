@@ -27,6 +27,7 @@ class DocumentSection(BaseModel):
     items: list[SummaryItem] = Field(default_factory=list)
     headers: list[str] = Field(default_factory=list)
     rows: list[list[str]] = Field(default_factory=list)
+    column_widths: list[float] = Field(default_factory=list)
     cards: list[Card] = Field(default_factory=list)
 
 
@@ -47,5 +48,7 @@ class DocumentEdits(BaseModel):
     selected_columns: list[str] | None = None
     show_summary: bool = True
     font_size: int = 11
+    orientation: Literal["portrait", "landscape"] = "portrait"
     template: str | None = None
+    column_widths: list[float] | None = None
     extra: dict[str, Any] = Field(default_factory=dict)
