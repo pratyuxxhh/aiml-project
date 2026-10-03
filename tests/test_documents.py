@@ -20,7 +20,15 @@ def _dataset():
 
 def test_all_templates_build_spec_with_resolved_content():
     dataset = _dataset()
-    for template_id in ("generic_table", "professional_report", "profile_cards"):
+    template_ids = (
+        "generic_table",
+        "professional_report",
+        "profile_cards",
+        "placement_summary",
+        "academic_marksheet",
+        "attendance_register",
+    )
+    for template_id in template_ids:
         spec = build_specification(dataset, template_id, DocumentEdits(show_summary=True))
         assert spec.template == template_id
         types = {s.type for s in spec.sections}
@@ -109,3 +117,21 @@ def test_mismatched_column_widths_are_ignored():
     assert table.headers == ["Name", "USN"]
     assert table.column_widths == []
 
+
+def test_profile_cards_export_as_three_column_grid(tmp_path: Path):
+    dataset = _dataset()
+    spec = build_specification(dataset, "profile_cards", DocumentEdits())
+    out = tmp_path / "cards.docx"
+
+    write_docx(spec, out)
+
+    doc = Document(str(out))
+    card_grid = next(
+        table for table in doc.tables
+        if any(cell.text.startswith("Pratyush") for row in table.rows for cell in row.cells)
+    )
+    assert len(card_grid.columns) == 3
+    assert len(card_grid.rows) == 1
+    assert "Pratyush" in card_grid.cell(0, 0).text
+    assert "Ananya" in card_grid.cell(0, 1).text
+    assert "Rohan" in card_grid.cell(0, 2).text

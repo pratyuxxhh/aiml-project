@@ -47,7 +47,28 @@ def infer_dataset_type(mapping: dict[str, SemanticType]) -> str:
 def recommend_templates(mapping: dict[str, SemanticType], dataset_type: str) -> list[str]:
     types = set(mapping.values())
     if dataset_type == "student_placement" or {"academic_score", "salary_package"} & types:
-        return ["professional_report", "generic_table", "profile_cards"]
+        return [
+            "placement_summary",
+            "professional_report",
+            "academic_marksheet",
+            "generic_table",
+            "profile_cards",
+            "attendance_register",
+        ]
     if "person_name" in types:
-        return ["profile_cards", "generic_table", "professional_report"]
-    return ["generic_table", "professional_report", "profile_cards"]
+        return [
+            "academic_marksheet",
+            "attendance_register",
+            "profile_cards",
+            "professional_report",
+            "generic_table",
+            "placement_summary",
+        ]
+    return [
+        "generic_table",
+        "professional_report",
+        "attendance_register",
+        "academic_marksheet",
+        "placement_summary",
+        "profile_cards",
+    ]

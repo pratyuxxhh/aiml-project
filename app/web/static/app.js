@@ -286,6 +286,9 @@ function wireResizableTables() {
 
     headers.forEach((cell, index) => {
       cell.style.position = "relative";
+      // A divider belongs to the boundary between this column and the next one.
+      // There is no boundary after the final column.
+      if (index === headers.length - 1) return;
       if (cell.querySelector(".col-resizer")) return;
       const resizer = document.createElement("span");
       resizer.className = "col-resizer";
@@ -299,20 +302,19 @@ function wireResizableTables() {
         event.stopPropagation();
 
         const startX = event.clientX;
-        const startWidths = currentWidths.slice();
+        const startWidths = (table.__columnWidths || currentWidths).slice();
         const total = startWidths.reduce((sum, value) => sum + value, 0) || 1;
         const minWidth = 30;
 
         const updateWidths = (clientX) => {
           const delta = clientX - startX;
-          const maxWidth = total - minWidth * (startWidths.length - 1);
-          const nextWidth = Math.max(minWidth, Math.min(startWidths[index] + delta, maxWidth));
-          const otherTotal = total - startWidths[index] || 1;
-          const remaining = total - nextWidth;
-          const next = startWidths.map((value, columnIndex) => {
-            if (columnIndex === index) return nextWidth;
-            return (value / otherTotal) * remaining;
-          });
+          const leftWidth = Math.max(
+            minWidth,
+            Math.min(startWidths[index] + delta, startWidths[index] + startWidths[index + 1] - minWidth)
+          );
+          const next = startWidths.slice();
+          next[index] = leftWidth;
+          next[index + 1] = startWidths[index] + startWidths[index + 1] - leftWidth;
           currentWidths = next;
           setWidths(next);
         };
@@ -449,4 +451,3 @@ applyPreviewOrientation("portrait");
 setColumnAdjustEnabled(false);
 wireResizableTables();
 loadTemplates().catch((err) => showError($("upload-status"), err.message));
-

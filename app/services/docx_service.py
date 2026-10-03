@@ -3,7 +3,7 @@ from pathlib import Path
 from docx import Document
 from docx.enum.section import WD_ORIENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH
-from docx.enum.table import WD_TABLE_ALIGNMENT
+from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT, WD_TABLE_ALIGNMENT
 from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
 from docx.shared import Inches, Pt, RGBColor
@@ -127,19 +127,7 @@ def _render_section(document: Document, section: DocumentSection, font_size: int
         _add_data_table(document, section, font_size, formatting)
         return
     if section.type == "cards":
-        for card in section.cards:
-            heading = document.add_heading(card.title, level=3)
-            for run in heading.runs:
-                run.font.color.rgb = RGBColor(0x1A, 0x36, 0x5D)
-            if card.fields:
-                table = document.add_table(rows=len(card.fields), cols=2)
-                table.style = "Table Grid"
-                for i, field in enumerate(card.fields):
-                    table.rows[i].cells[0].text = field.label
-                    table.rows[i].cells[1].text = field.value
-                    for run in table.rows[i].cells[0].paragraphs[0].runs:
-                        run.bold = True
-            document.add_paragraph("")
+        _add_cards_grid(document, section, font_size)
 
 
 def _add_data_table(document: Document, section: DocumentSection, font_size: int, formatting: Optional[DocumentFormatting]) -> None:
@@ -214,6 +202,120 @@ def _add_data_table(document: Document, section: DocumentSection, font_size: int
                     if t_spec.row_style_rules:
                         for rule in t_spec.row_style_rules:
                             _apply_row_style_rule(table, rule, section.headers)
+
+
+def _add_cards_grid(document: Document, section: DocumentSection, font_size: int) -> None:
+    """Render profile cards in the same three-column layout as the HTML preview."""
+    if not section.cards:
+        return
+
+    columns = 3
+    rows = (len(section.cards) + columns - 1) // columns
+    table = document.add_table(rows=rows, cols=columns)
+    table.autofit = False
+    _set_table_fixed_layout(table)
+
+    available_width = int(
+        document.sections[0].page_width
+        - document.sections[0].left_margin
+        - document.sections[0].right_margin
+    )
+    card_width = max(available_width // columns, 1)
+    _set_table_width(table, available_width)
+    for index in range(columns):
+        _set_column_width(table, index, card_width)
+
+    for index, card in enumerate(section.cards):
+        cell = table.cell(index // columns, index % columns)
+        cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.TOP
+        _set_cell_margins(cell, top=100, start=120, bottom=100, end=120)
+        _set_cell_border(cell, "D6D3D1")
+
+        title = cell.paragraphs[0]
+        title.paragraph_format.space_before = Pt(0)
+        title.paragraph_format.space_after = Pt(4)
+        title.paragraph_format.keep_with_next = True
+        title_run = title.add_run(card.title)
+        title_run.bold = True
+        title_run.font.size = Pt(font_size)
+        title_run.font.color.rgb = RGBColor(0x1C, 0x19, 0x17)
+
+        if card.fields:
+            details = cell.add_table(rows=len(card.fields), cols=2)
+            details.autofit = False
+            _set_table_fixed_layout(details)
+            _remove_table_borders(details)
+            details_width = max(card_width - 240, 1)
+            _set_table_width(details, details_width)
+            _set_column_width(details, 0, int(details_width * 0.48))
+            _set_column_width(details, 1, int(details_width * 0.52))
+            for row, field in zip(details.rows, card.fields):
+                label_paragraph = row.cells[0].paragraphs[0]
+                value_paragraph = row.cells[1].paragraphs[0]
+                for paragraph in (label_paragraph, value_paragraph):
+                    paragraph.paragraph_format.space_before = Pt(0)
+                    paragraph.paragraph_format.space_after = Pt(0)
+                    paragraph.paragraph_format.line_spacing = 1
+                label = label_paragraph.add_run(field.label)
+                label.font.size = Pt(max(font_size - 1, 8))
+                label.font.color.rgb = RGBColor(0x57, 0x53, 0x4E)
+                value = value_paragraph.add_run(field.value)
+                value.font.size = Pt(max(font_size - 1, 8))
+
+    # Keep the final row rectangular when the number of cards is not divisible by three.
+    for index in range(len(section.cards), rows * columns):
+        cell = table.cell(index // columns, index % columns)
+        cell.text = ""
+        _set_cell_margins(cell, top=0, start=0, bottom=0, end=0)
+        _set_cell_border(cell, "FFFFFF")
+
+    document.add_paragraph().paragraph_format.space_after = Pt(0)
+
+
+def _set_cell_margins(cell, top: int, start: int, bottom: int, end: int) -> None:
+    tc_pr = cell._tc.get_or_add_tcPr()
+    tc_mar = tc_pr.first_child_found_in("w:tcMar")
+    if tc_mar is None:
+        tc_mar = OxmlElement("w:tcMar")
+        tc_pr.append(tc_mar)
+    for side, value in (("top", top), ("start", start), ("bottom", bottom), ("end", end)):
+        node = tc_mar.find(qn(f"w:{side}"))
+        if node is None:
+            node = OxmlElement(f"w:{side}")
+            tc_mar.append(node)
+        node.set(qn("w:w"), str(value))
+        node.set(qn("w:type"), "dxa")
+
+
+def _set_cell_border(cell, color: str) -> None:
+    tc_pr = cell._tc.get_or_add_tcPr()
+    borders = tc_pr.first_child_found_in("w:tcBorders")
+    if borders is None:
+        borders = OxmlElement("w:tcBorders")
+        tc_pr.append(borders)
+    for side in ("top", "left", "bottom", "right", "insideH", "insideV"):
+        border = borders.find(qn(f"w:{side}"))
+        if border is None:
+            border = OxmlElement(f"w:{side}")
+            borders.append(border)
+        border.set(qn("w:val"), "single")
+        border.set(qn("w:sz"), "4")
+        border.set(qn("w:space"), "0")
+        border.set(qn("w:color"), color)
+
+
+def _remove_table_borders(table) -> None:
+    tbl_pr = table._tbl.tblPr
+    borders = tbl_pr.first_child_found_in("w:tblBorders")
+    if borders is None:
+        borders = OxmlElement("w:tblBorders")
+        tbl_pr.append(borders)
+    for side in ("top", "left", "bottom", "right", "insideH", "insideV"):
+        border = borders.find(qn(f"w:{side}"))
+        if border is None:
+            border = OxmlElement(f"w:{side}")
+            borders.append(border)
+        border.set(qn("w:val"), "nil")
 
 
 def _shade_header(row, formatting: Optional[DocumentFormatting] = None) -> None:

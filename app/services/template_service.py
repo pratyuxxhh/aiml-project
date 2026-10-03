@@ -23,6 +23,24 @@ AVAILABLE_TEMPLATES = [
         description="One card per row with labeled fields.",
         best_for="Record-like data such as students, customers, or employees.",
     ),
+    TemplateInfo(
+        id="placement_summary",
+        name="Placement Summary",
+        description="Landscape placement report with summary metrics and details.",
+        best_for="Placement cells, internships, package reports, and recruiter records.",
+    ),
+    TemplateInfo(
+        id="academic_marksheet",
+        name="Academic Marksheet",
+        description="Compact landscape register for marks, grades, and student results.",
+        best_for="Internal marks, semester results, exam scores, and grade sheets.",
+    ),
+    TemplateInfo(
+        id="attendance_register",
+        name="Attendance Register",
+        description="Landscape attendance register with a compact data table.",
+        best_for="Class attendance, lab attendance, and monthly attendance records.",
+    ),
 ]
 
 

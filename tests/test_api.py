@@ -20,7 +20,14 @@ def test_upload_preview_export_flow():
     templates = client.get("/templates")
     assert templates.status_code == 200
     ids = {t["id"] for t in templates.json()["templates"]}
-    assert ids == {"generic_table", "professional_report", "profile_cards"}
+    assert ids == {
+        "generic_table",
+        "professional_report",
+        "profile_cards",
+        "placement_summary",
+        "academic_marksheet",
+        "attendance_register",
+    }
 
     preview = client.post(
         "/documents/preview",
@@ -48,4 +55,3 @@ def test_invalid_file_type():
     res = client.post("/upload", files={"file": ("x.txt", b"hello", "text/plain")})
     assert res.status_code == 400
     assert "Unsupported" in res.json()["error"]
-
