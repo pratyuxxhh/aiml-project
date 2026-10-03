@@ -33,11 +33,12 @@ def build_professional_report(dataset: NormalizedDataset, edits: DocumentEdits) 
         sections.append(heading("Summary", level=2))
         sections.append(summary_section(build_summary_items(dataset, columns)))
     sections.append(heading("Details", level=2))
-    sections.append(table_section(columns, table_rows(dataset, columns)))
+    sections.append(table_section(columns, table_rows(dataset, columns), edits.column_widths))
     return DocumentSpecification(
         template="professional_report",
         title=title,
         subtitle=subtitle,
         font_size=edits.font_size,
+        orientation=edits.orientation or "portrait",
         sections=sections,
     )

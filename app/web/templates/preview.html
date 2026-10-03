@@ -17,11 +17,11 @@
         {% endfor %}
       </div>
     {% elif section.type == "table" %}
-      <table>
+      <table class="data-table"{% if section.column_widths %} style="table-layout: fixed; width: 100%;"{% endif %}>
         <thead>
           <tr>
             {% for header in section.headers %}
-              <th>{{ header }}</th>
+              <th{% if section.column_widths and loop.index0 < section.column_widths|length %} style="width: {{ section.column_widths[loop.index0] }}%;" data-col-width="{{ section.column_widths[loop.index0] }}"{% endif %}>{{ header }}</th>
             {% endfor %}
           </tr>
         </thead>

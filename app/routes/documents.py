@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 from app.config import settings
 from app.errors import AppError
 from app.models.document import DocumentEdits
+from app.models.formatting_spec import DocumentFormatting
 from app.services.docx_service import write_docx
 from app.services.preview_service import render_preview_html
 from app.services.template_service import build_specification
@@ -19,6 +20,7 @@ class DocumentRequest(BaseModel):
     dataset_id: str
     template: str = "generic_table"
     edits: DocumentEdits = Field(default_factory=DocumentEdits)
+    formatting: DocumentFormatting | None = None
 
 
 @router.post("/documents/preview")
@@ -32,7 +34,7 @@ def export_document(payload: DocumentRequest):
     spec = _spec_from_request(payload)
     file_id = str(uuid4())
     path = settings.output_dir / f"{file_id}.docx"
-    write_docx(spec, path)
+    write_docx(spec, path, formatting=payload.formatting)
     filename = f"{spec.title.replace(' ', '_')[:60] or 'document'}.docx"
     return {"id": file_id, "filename": filename}
 

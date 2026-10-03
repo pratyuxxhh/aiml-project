@@ -22,11 +22,12 @@ def build_generic_table(dataset: NormalizedDataset, edits: DocumentEdits) -> Doc
         sections.append(paragraph(subtitle))
     if edits.show_summary:
         sections.append(summary_section(build_summary_items(dataset, columns)))
-    sections.append(table_section(columns, table_rows(dataset, columns)))
+    sections.append(table_section(columns, table_rows(dataset, columns), edits.column_widths))
     return DocumentSpecification(
         template="generic_table",
         title=title,
         subtitle=subtitle,
         font_size=edits.font_size,
+        orientation=edits.orientation or "portrait",
         sections=sections,
     )

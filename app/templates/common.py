@@ -109,11 +109,30 @@ def summary_section(items: list[SummaryItem]) -> DocumentSection:
     return DocumentSection(type="summary", items=items)
 
 
-def table_section(columns: list[Column], rows: list[list[str]]) -> DocumentSection:
+def _aligned_column_widths(
+    column_count: int, column_widths: list[float] | None
+) -> list[float]:
+    if not column_widths or column_count <= 0:
+        return []
+    if len(column_widths) != column_count:
+        return []
+    cleaned = [float(width) for width in column_widths if isinstance(width, (int, float)) and width > 0]
+    if len(cleaned) != column_count:
+        return []
+    total = sum(cleaned) or 1.0
+    return [width / total * 100.0 for width in cleaned]
+
+
+def table_section(
+    columns: list[Column],
+    rows: list[list[str]],
+    column_widths: list[float] | None = None,
+) -> DocumentSection:
     return DocumentSection(
         type="table",
         headers=[c.original_name for c in columns],
         rows=rows,
+        column_widths=_aligned_column_widths(len(columns), column_widths),
     )
 
 

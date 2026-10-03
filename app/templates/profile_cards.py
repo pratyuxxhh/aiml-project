@@ -27,6 +27,6 @@ def build_profile_cards(dataset: NormalizedDataset, edits: DocumentEdits) -> Doc
         title=title,
         subtitle=subtitle,
         font_size=edits.font_size,
-        orientation="portrait",
+        orientation=edits.orientation or "portrait",
         sections=sections,
     )
