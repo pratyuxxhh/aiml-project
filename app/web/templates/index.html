@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Excel → Word</title>
-  <link rel="stylesheet" href="/static/styles.css" />
+  <link rel="stylesheet" href="/static/styles.css?v=20261103" />
 </head>
 <body>
   <header>
@@ -61,11 +61,14 @@
       <h2>4. Preview</h2>
       <div style="display:flex; justify-content:space-between; align-items:center; gap:0.75rem; margin-bottom:0.75rem; flex-wrap:wrap;">
         <button type="button" id="orientation-toggle">Landscape view</button>
-        <button type="button" id="toggle-column-adjust">Enable column adjust</button>
+        <div>
+          <button type="button" id="auto-adjust" title="Set column widths to suit the data">Auto adjust</button>
+          <button type="button" id="toggle-column-adjust">Enable column adjust</button>
+        </div>
       </div>
       <div id="preview" class="preview"></div>
     </section>
   </main>
-  <script src="/static/app.js"></script>
+  <script src="/static/app.js?v=20261103"></script>
 </body>
 </html>

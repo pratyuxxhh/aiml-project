@@ -11,7 +11,7 @@ def test_deterministic_student_placement_classification():
         "Package": "salary_package",
     }
     assert result.dataset_type == "student_placement"
-    assert result.recommended_templates[0] == "professional_report"
+    assert result.recommended_templates[0] == "placement_summary"
 
 
 def test_generic_and_people_records_rules_are_offline_and_stable():

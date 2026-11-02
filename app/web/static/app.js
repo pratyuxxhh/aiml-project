@@ -181,39 +181,7 @@ function applyPreviewOrientation(mode) {
   const toggle = $("orientation-toggle");
   preview.classList.toggle("landscape", state.previewOrientation === "landscape");
   toggle.textContent = state.previewOrientation === "landscape" ? "Portrait view" : "Landscape view";
-
-  const tables = preview.querySelectorAll("table.data-table, table");
-  if (!tables.length) return;
-
-  const seen = new Set();
-  tables.forEach((table) => {
-    if (seen.has(table)) return;
-    seen.add(table);
-    if (!table.__columnWidths || !table.__columnWidths.length) return;
-    const factor = state.previewOrientation === "landscape" ? 1.5 : 1 / 1.5;
-    const nextWidths = table.__columnWidths.map((value) => Math.max(30, value * factor));
-    const total = nextWidths.reduce((sum, value) => sum + value, 0) || 1;
-    const headers = table.querySelectorAll("thead th, tr:first-child th");
-    headers.forEach((cell, index) => {
-      const percent = (nextWidths[index] / total) * 100;
-      cell.style.width = `${percent}%`;
-      cell.dataset.colWidth = String(percent);
-      cell.dataset.colWidthPx = String(nextWidths[index]);
-    });
-
-    Array.from(table.rows).forEach((row) => {
-      Array.from(row.cells).forEach((cell, index) => {
-        if (index < headers.length) {
-          const percent = (nextWidths[index] / total) * 100;
-          cell.style.width = `${percent}%`;
-          cell.dataset.colWidth = String(percent);
-          cell.dataset.colWidthPx = String(nextWidths[index]);
-        }
-      });
-    });
-
-    table.__columnWidths = nextWidths;
-  });
+  // Column widths are percentages of the table, so they need no rescaling when the orientation changes.
 }
 
 function applyColumnWidths(table) {
@@ -279,9 +247,11 @@ function wireResizableTables() {
       });
     };
 
+    // Pointer movement is measured in pixels. Always use rendered pixel widths
+    // here; percentages are only used when serializing the final selection.
     let currentWidths = headers.map((cell) => {
-      const width = parseFloat(cell.dataset.colWidthPx || cell.dataset.colWidth || cell.style.width || getComputedStyle(cell).width);
-      return Number.isFinite(width) ? width : table.clientWidth / headers.length;
+      const width = cell.getBoundingClientRect().width;
+      return width > 0 ? width : table.clientWidth / headers.length;
     });
 
     headers.forEach((cell, index) => {
@@ -357,6 +327,85 @@ function setColumnAdjustEnabled(enabled) {
   });
 }
 
+// Measurements of the exported table (see docx_service.py): Letter page with 0.9in margins,
+// Table Grid cell padding of 0.075in per side, bold header at the chosen size, body 1pt smaller.
+const DOCX_TEXT_WIDTH_IN = { portrait: 8.5 - 1.8, landscape: 11 - 1.8 };
+const DOCX_CELL_EXTRA_PX = 2 * 0.075 * 96 + 4; // padding on both sides, plus border and a little slack
+const DOCX_FONT = "Calibri, Carlito, sans-serif";
+const PT_TO_PX = 96 / 72;
+let measureCanvas = null;
+
+/**
+ * Size the columns from their content, like Word's "AutoFit to contents":
+ * every column first gets room for its longest word, so words are never split;
+ * the remaining width then goes to the columns whose text would otherwise wrap,
+ * in proportion to how much more room each needs. When every cell already fits
+ * on one line, the spare width is shared in proportion to each column's text.
+ */
+function autoAdjustColumns() {
+  const table = previewDataTable();
+  const headerRow = table?.querySelector("thead tr");
+  if (!table || !headerRow) return false;
+
+  measureCanvas = measureCanvas || document.createElement("canvas");
+  const ctx = measureCanvas.getContext("2d");
+  const fontSize = Number($("font-size").value) || 11;
+  const headerFont = `bold ${fontSize * PT_TO_PX}px ${DOCX_FONT}`;
+  const bodyFont = `${Math.max(fontSize - 1, 8) * PT_TO_PX}px ${DOCX_FONT}`;
+  const textWidth = (font, text) => {
+    ctx.font = font;
+    return ctx.measureText(text).width;
+  };
+
+  const headers = Array.from(headerRow.cells);
+  const rows = Array.from(table.tBodies[0]?.rows || []);
+  const minWidths = [];
+  const fullWidths = [];
+  headers.forEach((th, index) => {
+    let longestWord = 0;
+    let longestLine = 0;
+    const measure = (font, raw) => {
+      const text = raw.trim().replace(/\s+/g, " ");
+      if (!text) return;
+      longestLine = Math.max(longestLine, textWidth(font, text));
+      for (const word of text.split(" ")) longestWord = Math.max(longestWord, textWidth(font, word));
+    };
+    measure(headerFont, th.textContent);
+    rows.forEach((row) => row.cells[index] && measure(bodyFont, row.cells[index].textContent));
+    minWidths.push(longestWord + DOCX_CELL_EXTRA_PX);
+    fullWidths.push(Math.max(longestLine, longestWord) + DOCX_CELL_EXTRA_PX);
+  });
+
+  const available = DOCX_TEXT_WIDTH_IN[state.previewOrientation] * 96;
+  const sum = (values) => values.reduce((total, value) => total + value, 0);
+  const totalMin = sum(minWidths);
+  const totalFull = sum(fullWidths);
+  let widths;
+  if (totalFull <= available) {
+    widths = fullWidths; // everything fits on one line
+  } else if (totalMin >= available) {
+    widths = minWidths; // even single words are tight; keep their proportions
+  } else {
+    const spare = available - totalMin;
+    const wanted = fullWidths.map((full, i) => full - minWidths[i]);
+    const totalWanted = sum(wanted) || 1;
+    widths = minWidths.map((min, i) => min + (spare * wanted[i]) / totalWanted);
+  }
+
+  const total = sum(widths) || 1;
+  Array.from(table.rows).forEach((row) => {
+    Array.from(row.cells).forEach((cell, index) => {
+      if (index >= widths.length) return;
+      const percent = (widths[index] / total) * 100;
+      cell.style.width = `${percent}%`;
+      cell.dataset.colWidth = String(percent);
+      cell.dataset.colWidthPx = String(widths[index]);
+    });
+  });
+  table.__columnWidths = widths;
+  return true;
+}
+
 async function refreshPreview() {
   if (!state.id) return;
   const res = await fetch("/documents/preview", {
@@ -420,6 +469,18 @@ $("toggle-column-adjust").addEventListener("click", () => {
   if (state.id) {
     wireResizableTables();
   }
+});
+
+$("auto-adjust").addEventListener("click", () => {
+  if (!state.id) return;
+  if (!autoAdjustColumns()) {
+    showError($("upload-status"), "Auto adjust works on templates that show a table (not Profile Cards).");
+    return;
+  }
+  // Re-render from the server so the preview and the exported .docx use the new widths.
+  refreshPreview().catch((err) => {
+    $("preview").innerHTML = `<p class="error">${err.message}</p>`;
+  });
 });
 
 $("preview-btn").addEventListener("click", () => {
